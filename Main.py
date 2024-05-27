@@ -240,6 +240,12 @@ elif args.data_name == 'ml_100k':
     ) = load_official_trainvaltest_split(
         args.data_name, args.testing, rating_map, post_rating_map, args.ratio
     )
+elif args.data_name == 'coupang':
+    (
+        u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
+        val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices,
+        test_v_indices, class_values
+    ) = load_coupang_dataset()
 else:
     (
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,

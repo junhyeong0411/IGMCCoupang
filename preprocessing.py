@@ -9,6 +9,8 @@ import h5py
 import pandas as pd
 import pdb
 from data_utils import load_data, map_data, download_dataset
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 
 
 def normalize_features(feat):
@@ -581,6 +583,49 @@ def load_official_trainvaltest_split(dataset, testing=False, rating_map=None, po
 
     print("User features shape: "+str(u_features.shape))
     print("Item features shape: "+str(v_features.shape))
+
+    return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
+        val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values
+
+
+def load_coupang_dataset():
+    df = pd.read_csv('raw_data/coupang/output.csv')
+    df = df.drop_duplicates(subset=['product_id', 'user_num'])
+
+    # label encoding
+    # le.inverse_transfrom 으로 복원
+
+    le = LabelEncoder()
+    df['product_id'] = le.fit_transform(df['product_id'])
+    df['user_num'] = le.fit_transform(df['user_num'])
+
+    u_features = None
+    v_features = None
+
+    # num of users and products
+    num_users = max(df['user_num']) + 1
+    num_products = max(df['product_id']) + 1
+
+    df_train, df_test = train_test_split(df, test_size=0.2, random_state=123)
+    _, df_val = train_test_split(df_train, test_size=0.2, random_state=123)
+
+    train_labels = list(map(lambda x: x - 1, df_train.rating.to_list()))  # 1~5점을 0~4점으로 바꾸기
+    u_train_idx = df_train.user_num.to_list()
+    v_train_idx = df_train.product_id.to_list()
+
+    val_labels = list(map(lambda x: x - 1, df_val.rating.to_list()))
+    u_val_idx = df_val.user_num.to_list()
+    v_val_idx = df_val.product_id.to_list()
+
+    test_labels = list(map(lambda x: x - 1, df_test.rating.to_list()))
+    u_test_idx = df_test.user_num.to_list()
+    v_test_idx = df_test.product_id.to_list()
+
+    # make training adjacency matrix
+    rating_mx_train = sp.csr_matrix((list(map(float, df_train.rating.to_list())), (u_train_idx, v_train_idx)),
+                                    shape=(num_users, num_products))
+    print(rating_mx_train)
+    class_values = [1., 2., 3., 4., 5.]
 
     return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
         val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values
